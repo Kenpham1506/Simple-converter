@@ -3,36 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>All-in-One File Converter</title>
-  <link rel="stylesheet" href="styles.css">
+  <title>File Converter</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Include necessary libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.10.1/dist/ffmpeg.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/SheetJS/0.17.0/xlsx.full.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/ffmpeg.js/4.2.9003/ffmpeg.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
 </head>
 <body>
-  <div class="container">
-    <h1>All-in-One File Converter</h1>
-    
-    <input type="file" id="fileInput" />
-    
-    <label for="categorySelect">Select Category:</label>
-    <select id="categorySelect" onchange="updateConversionOptions()">
-      <option value="">Choose Category</option>
-      <option value="image">Image</option>
-      <option value="text">Text</option>
-      <option value="audio">Audio</option>
-      <option value="video">Video</option>
-      <option value="pdf">PDF</option>
-      <option value="document">Document</option>
-    </select>
-
-    <label for="formatSelect">Convert to:</label>
-    <select id="formatSelect">
-      <!-- Options populated dynamically based on category -->
-    </select>
-
-    <button onclick="convertFile()">Convert File</button>
-  </div>
+  <h1>File Converter</h1>
+  <input type="file" id="fileInput" accept="*/*">
+  
+  <label for="categorySelect">Select Category:</label>
+  <select id="categorySelect" onchange="updateConversionOptions()">
+    <option value="image">Image</option>
+    <option value="text">Text</option>
+    <option value="audio">Audio</option>
+    <option value="video">Video</option>
+    <option value="pdf">PDF</option>
+    <option value="document">Document</option>
+  </select>
+  
+  <label for="formatSelect">Convert to Format:</label>
+  <select id="formatSelect">
+    <!-- Options will be dynamically populated based on the category -->
+  </select>
+  
+  <button onclick="convertFile()">Convert</button>
   
   <script src="script.js"></script>
 </body>
