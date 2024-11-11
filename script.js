@@ -70,33 +70,129 @@ function convertFile() {
   }
 }
 
-// Placeholder conversion functions - You'd need to implement or add external libraries for actual conversions
+// Convert Image File
 function convertImageFile(format) {
-  alert(`Converting image to ${format}`);
-  // Example for converting using <canvas> for JPG, PNG, WebP, etc.
+  const img = new Image();
+  img.src = URL.createObjectURL(new Blob([fileData]));
+  img.onload = function() {
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+
+    const mimeType = `image/${format === "jpg" ? "jpeg" : format}`;
+    canvas.toBlob(function(blob) {
+      downloadFile(blob, `converted_image.${format}`);
+    }, mimeType);
+  };
 }
 
-function convertTextFile(format) {
-  alert(`Converting text to ${format}`);
-  // For text to PDF, HTML, or TXT
+// Convert Text File
+async function convertTextFile(format) {
+  const text = new TextDecoder().decode(fileData);
+
+  if (format === "pdf") {
+    const pdf = new jsPDF();
+    pdf.text(text, 10, 10);
+    const pdfBlob = pdf.output('blob');
+    downloadFile(pdfBlob, "converted_text.pdf");
+  } else if (format === "html") {
+    const htmlContent = `<pre>${text}</pre>`;
+    const blob = new Blob([htmlContent], { type: "text/html" });
+    downloadFile(blob, "converted_text.html");
+  } else if (format === "txt") {
+    const blob = new Blob([text], { type: "text/plain" });
+    downloadFile(blob, "converted_text.txt");
+  }
 }
 
-function convertAudioFile(format) {
-  alert(`Converting audio to ${format}`);
-  // For audio to MP3, WAV, OGG - requires Web Audio API or third-party library
+// Convert Audio File
+async function convertAudioFile(format) {
+  const ffmpeg = createFFmpeg({ log: true });
+  await ffmpeg.load();
+
+  await ffmpeg.FS('writeFile', 'input.wav', new Uint8Array(fileData));
+
+  await ffmpeg.run('-i', 'input.wav', `output.${format}`);
+  const data = ffmpeg.FS('readFile', `output.${format}`);
+
+  const blob = new Blob([data.buffer], { type: `audio/${format}` });
+  downloadFile(blob, `converted_audio.${format}`);
 }
 
-function convertVideoFile(format) {
-  alert(`Converting video to ${format}`);
-  // For video to MP4, WebM, OGG - using ffmpeg.wasm
+// Convert Video File
+async function convertVideoFile(format) {
+  const ffmpeg = createFFmpeg({ log: true });
+  await ffmpeg.load();
+
+  await ffmpeg.FS('writeFile', 'input.mp4', new Uint8Array(fileData));
+
+  await ffmpeg.run('-i', 'input.mp4', `output.${format}`);
+  const data = ffmpeg.FS('readFile', `output.${format}`);
+
+  const blob = new Blob([data.buffer], { type: `video/${format}` });
+  downloadFile(blob, `converted_video.${format}`);
 }
 
-function convertPdfFile(format) {
-  alert(`Converting PDF to ${format}`);
-  // For PDF to PNG (extract image) or text extraction
+// Convert PDF File
+async function convertPdfFile(format) {
+  const pdf = await PDFLib.PDFDocument.load(fileData);
+
+  if (format === "text") {
+    const textContent = await pdf.getTextContent();
+    const blob = new Blob([textContent], { type: "text/plain" });
+    downloadFile(blob, "converted_pdf.txt");
+  } else if (format === "image") {
+    const pages = pdf.getPages();
+    const page = pages[0];
+    const { width, height } = page.getSize();
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, width, height);
+    page.draw(ctx);
+
+    canvas.toBlob(function(blob) {
+      downloadFile(blob, "converted_pdf.png");
+    }, 'image/png');
+  }
 }
 
-function convertDocumentFile(format) {
-  alert(`Converting document to ${format}`);
-  // For DOCX to PDF, TXT, JSON, CSV - requires third-party library like Mammoth.js or SheetJS
+// Convert Document File (DOCX, XLSX)
+async function convertDocumentFile(format) {
+  if (fileType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+    const doc = await mammoth.convertToHtml({ arrayBuffer: fileData });
+    if (format === "html") {
+      const blob = new Blob([doc.value], { type: "text/html" });
+      downloadFile(blob, "converted_document.html");
+    } else if (format === "txt") {
+      const blob = new Blob([doc.value], { type: "text/plain" });
+      downloadFile(blob, "converted_document.txt");
+    }
+  } else if (fileType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
+    const workbook = XLSX.read(new Uint8Array(fileData), { type: "array" });
+    if (format === "csv") {
+      const csv = XLSX.utils.sheet_to_csv(workbook.Sheets[workbook.SheetNames[0]]);
+      const blob = new Blob([csv], { type: "text/csv" });
+      downloadFile(blob, "converted_spreadsheet.csv");
+    } else if (format === "json") {
+      const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+      const blob = new Blob([JSON.stringify(json)], { type: "application/json" });
+      downloadFile(blob, "converted_spreadsheet.json");
+    }
+  }
+}
+
+// Helper function to download file
+function downloadFile(blob, fileName) {
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
