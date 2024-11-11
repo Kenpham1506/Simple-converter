@@ -1,4 +1,5 @@
 const conversionOptions = {
+  file_type:,
   image: ["JPG", "PNG", "WebP", "BMP"],
   text: ["PDF", "HTML", "TXT"],
   audio: ["MP3", "WAV", "OGG"],
