@@ -2,9 +2,7 @@ const conversionOptions = {
   image: ["JPG", "PNG", "WebP", "BMP"],
   text: ["PDF", "HTML", "TXT"],
   audio: ["MP3", "WAV", "OGG"],
-  video: ["MP4", "WebM", "OGG"],
-  pdf: ["Image (PNG)", "Text"],
-  document: ["PDF", "TXT", "CSV", "JSON"]
+  document: ["TXT", "HTML", "PDF", "CSV"]
 };
 
 document.getElementById("fileInput").addEventListener("change", handleFileUpload);
@@ -55,23 +53,10 @@ function convertFile() {
     convertTextFile(format);
   } else if (category === "audio") {
     convertAudioFile(format);
-  } else if (category === "video") {
-    convertVideoFile(format);
-  } else if (category === "pdf") {
-    convertPdfFile(format);
   } else if (category === "document") {
     convertDocumentFile(format);
   } else {
     alert("Unsupported category selected.");
-  }
-}
-
-const { createFFmpeg, fetchFile } = FFmpeg;
-const ffmpeg = createFFmpeg({ log: true });
-
-async function loadFFmpeg() {
-  if (!ffmpeg.isLoaded()) {
-    await ffmpeg.load();
   }
 }
 
@@ -111,51 +96,7 @@ async function convertTextFile(format) {
 }
 
 async function convertAudioFile(format) {
-  await loadFFmpeg();
-
-  await ffmpeg.FS('writeFile', 'input.wav', await fetchFile(new Uint8Array(fileData)));
-  await ffmpeg.run('-i', 'input.wav', `output.${format}`);
-  const data = ffmpeg.FS('readFile', `output.${format}`);
-
-  const blob = new Blob([data.buffer], { type: `audio/${format}` });
-  downloadFile(blob, `converted_audio.${format}`);
-}
-
-async function convertVideoFile(format) {
-  await loadFFmpeg();
-
-  await ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(new Uint8Array(fileData)));
-  await ffmpeg.run('-i', 'input.mp4', `output.${format}`);
-  const data = ffmpeg.FS('readFile', `output.${format}`);
-
-  const blob = new Blob([data.buffer], { type: `video/${format}` });
-  downloadFile(blob, `converted_video.${format}`);
-}
-
-async function convertPdfFile(format) {
-  const pdf = await PDFLib.PDFDocument.load(fileData);
-
-  if (format === "text") {
-    const textContent = await pdf.getTextContent();
-    const blob = new Blob([textContent], { type: "text/plain" });
-    downloadFile(blob, "converted_pdf.txt");
-  } else if (format === "image") {
-    const pages = pdf.getPages();
-    const page = pages[0];
-    const { width, height } = page.getSize();
-
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = "white";
-    ctx.fillRect(0, 0, width, height);
-    page.draw(ctx);
-
-    canvas.toBlob(function(blob) {
-      downloadFile(blob, "converted_pdf.png");
-    }, 'image/png');
-  }
+  alert("Audio conversion is not yet supported for GitHub Pages.");
 }
 
 async function convertDocumentFile(format) {
@@ -167,6 +108,11 @@ async function convertDocumentFile(format) {
     } else if (format === "txt") {
       const blob = new Blob([doc.value], { type: "text/plain" });
       downloadFile(blob, "converted_document.txt");
+    } else if (format === "pdf") {
+      const pdf = new jsPDF();
+      pdf.text(doc.value, 10, 10);
+      const pdfBlob = pdf.output('blob');
+      downloadFile(pdfBlob, "converted_document.pdf");
     }
   } else if (fileType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
     const workbook = XLSX.read(new Uint8Array(fileData), { type: "array" });
