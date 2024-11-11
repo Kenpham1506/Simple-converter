@@ -1,4 +1,3 @@
-// Define options for each file conversion category
 const conversionOptions = {
   image: ["JPG", "PNG", "WebP", "BMP"],
   text: ["PDF", "HTML", "TXT"],
@@ -12,11 +11,10 @@ document.getElementById("fileInput").addEventListener("change", handleFileUpload
 let fileData = null;
 let fileType = "";
 
-// Handle file upload and load file data
-function handleFileUpload(event) {
+async function handleFileUpload(event) {
   const file = event.target.files[0];
   if (!file) return;
-  
+
   fileType = file.type;
   const reader = new FileReader();
   reader.onload = function(e) {
@@ -27,7 +25,6 @@ function handleFileUpload(event) {
   reader.readAsArrayBuffer(file);
 }
 
-// Update conversion options based on selected category
 function updateConversionOptions() {
   const category = document.getElementById("categorySelect").value;
   const formatSelect = document.getElementById("formatSelect");
@@ -43,11 +40,10 @@ function updateConversionOptions() {
   }
 }
 
-// Convert the file based on selected options
 function convertFile() {
   const category = document.getElementById("categorySelect").value;
   const format = document.getElementById("formatSelect").value;
-  
+
   if (!fileData) {
     alert("Please upload a file first.");
     return;
@@ -70,7 +66,15 @@ function convertFile() {
   }
 }
 
-// Convert Image File
+const { createFFmpeg, fetchFile } = FFmpeg;
+const ffmpeg = createFFmpeg({ log: true });
+
+async function loadFFmpeg() {
+  if (!ffmpeg.isLoaded()) {
+    await ffmpeg.load();
+  }
+}
+
 function convertImageFile(format) {
   const img = new Image();
   img.src = URL.createObjectURL(new Blob([fileData]));
@@ -88,7 +92,6 @@ function convertImageFile(format) {
   };
 }
 
-// Convert Text File
 async function convertTextFile(format) {
   const text = new TextDecoder().decode(fileData);
 
@@ -107,13 +110,10 @@ async function convertTextFile(format) {
   }
 }
 
-// Convert Audio File
 async function convertAudioFile(format) {
-  const ffmpeg = createFFmpeg({ log: true });
-  await ffmpeg.load();
+  await loadFFmpeg();
 
-  await ffmpeg.FS('writeFile', 'input.wav', new Uint8Array(fileData));
-
+  await ffmpeg.FS('writeFile', 'input.wav', await fetchFile(new Uint8Array(fileData)));
   await ffmpeg.run('-i', 'input.wav', `output.${format}`);
   const data = ffmpeg.FS('readFile', `output.${format}`);
 
@@ -121,13 +121,10 @@ async function convertAudioFile(format) {
   downloadFile(blob, `converted_audio.${format}`);
 }
 
-// Convert Video File
 async function convertVideoFile(format) {
-  const ffmpeg = createFFmpeg({ log: true });
-  await ffmpeg.load();
+  await loadFFmpeg();
 
-  await ffmpeg.FS('writeFile', 'input.mp4', new Uint8Array(fileData));
-
+  await ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(new Uint8Array(fileData)));
   await ffmpeg.run('-i', 'input.mp4', `output.${format}`);
   const data = ffmpeg.FS('readFile', `output.${format}`);
 
@@ -135,7 +132,6 @@ async function convertVideoFile(format) {
   downloadFile(blob, `converted_video.${format}`);
 }
 
-// Convert PDF File
 async function convertPdfFile(format) {
   const pdf = await PDFLib.PDFDocument.load(fileData);
 
@@ -162,7 +158,6 @@ async function convertPdfFile(format) {
   }
 }
 
-// Convert Document File (DOCX, XLSX)
 async function convertDocumentFile(format) {
   if (fileType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
     const doc = await mammoth.convertToHtml({ arrayBuffer: fileData });
@@ -187,12 +182,9 @@ async function convertDocumentFile(format) {
   }
 }
 
-// Helper function to download file
-function downloadFile(blob, fileName) {
-  const link = document.createElement('a');
+function downloadFile(blob, filename) {
+  const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = fileName;
-  document.body.appendChild(link);
+  link.download = filename;
   link.click();
-  document.body.removeChild(link);
 }
